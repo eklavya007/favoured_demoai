@@ -1,63 +1,19 @@
 // api/chat.js
 
 // ---------------------------------------------------------
-// BASIC VERCEL EDGE FUNCTION SETUP
+// SINGLE-COMPANY CONFIG ("DATABASE")
 // ---------------------------------------------------------
-export const config = {
-  runtime: "edge",
-};
+//
+// This is the ONLY part you need to edit when you make
+// a new demo for a different company.
+//
+// 1. Change COMPANY_NAME
+// 2. Replace COMPANY_CONTEXT with the block I generate for you
+// ---------------------------------------------------------
 
-export default async function handler(req) {
-  try {
-    // Allow only POST requests from the frontend
-    if (req.method !== "POST") {
-      return new Response(
-        JSON.stringify({ error: "Method not allowed" }),
-        { status: 405, headers: { "Content-Type": "application/json" } }
-      );
-    }
+const COMPANY_NAME = "Favoured";
 
-    // Parse JSON body: we expect { message: "...", company: "..." }
-    const body = await req.json();
-    const userMessage = body.message || "";
-    const rawCompany = body.company || "this company";
-
-    if (!userMessage) {
-      return new Response(
-        JSON.stringify({ error: "No message provided" }),
-        { status: 400, headers: { "Content-Type": "application/json" } }
-      );
-    }
-
-    // ---------------------------------------------------------
-    // 1. NORMALISE COMPANY NAME FOR LOOKUP
-    // ---------------------------------------------------------
-    const normalised = rawCompany.trim().toLowerCase();
-
-    // ---------------------------------------------------------
-    // 2. COMPANY PROFILES (EDIT THIS PART ONLY)
-    // ---------------------------------------------------------
-    //
-    // This object is where you add / edit companies.
-    // Each key should be a LOWERCASE version of the company name.
-    //
-    // ✅ How to add a new company:
-    //
-    // 1. Copy the TEMPLATE block below.
-    // 2. Replace "your new company" with the lowercase name.
-    // 3. Replace displayName + context with what I generate for you.
-    // 4. Redeploy on Vercel – done.
-    //
-    // If a company is NOT in this list, the bot falls back to a generic mode.
-    //
-
-    const companyProfiles = {
-      // -----------------------------------------------------
-      // EXAMPLE 1 – BANHAM SECURITY
-      // -----------------------------------------------------
-      "favoured": {
-  displayName: "Favoured",
-  context: `
+const COMPANY_CONTEXT = `
 Favoured is a data-driven, full-funnel performance marketing agency based in London, UK.
 They "mix art & science to drive performance", combining best-in-class creative production
 with rigorous performance marketing and analytics. The legal entity is FAVOURED LTD
@@ -133,77 +89,52 @@ How you as the assistant should respond for Favoured:
   "Yes, that’s very aligned with Favoured’s work. The best next step would be to book a call with the team via
   the contact form on their website or email hello@favoured.co.uk so they can review your goals and current setup
   in detail."
-  `
-},
+`;
 
+// ---------------------------------------------------------
+// VERCEL EDGE FUNCTION
+// ---------------------------------------------------------
+export const config = {
+  runtime: "edge",
+};
 
-      // -----------------------------------------------------
-      // TEMPLATE – COPY THIS FOR ANY NEW COMPANY
-      // -----------------------------------------------------
-      /*
-      "your new company (lowercase)": {
-        displayName: "Your New Company (Nice Name)",
-        context: `
-Short description:
-- What they do
-- Who they serve (B2B/B2C, niche, market)
-- Key services / products
+export default async function handler(req) {
+  try {
+    if (req.method !== "POST") {
+      return new Response(
+        JSON.stringify({ error: "Method not allowed" }),
+        { status: 405, headers: { "Content-Type": "application/json" } }
+      );
+    }
 
-Typical customer questions:
-- ...
-- ...
-- ...
+    const body = await req.json();
+    const userMessage = body.message || "";
 
-When answering:
-- Emphasise X (e.g. trust, speed, premium, low cost)
-- Push users towards Y (e.g. book a call, fill enquiry form, start free trial)
-- Avoid guessing things like exact prices or confidential details.
-        `
-      },
-      */
-    };
+    if (!userMessage) {
+      return new Response(
+        JSON.stringify({ error: "No message provided" }),
+        { status: 400, headers: { "Content-Type": "application/json" } }
+      );
+    }
 
-    // ---------------------------------------------------------
-    // 3. PICK THE RIGHT PROFILE (OR FALL BACK TO GENERIC)
-    // ---------------------------------------------------------
-    const companyProfile =
-      companyProfiles[normalised] ||
-      companyProfiles[rawCompany.toLowerCase()] ||
-      null;
-
-    const effectiveName =
-      companyProfile?.displayName || rawCompany;
-
-    const extraContext =
-      companyProfile?.context ||
-      `
-You are a demo AI assistant built for ${effectiveName}.
-You don't have internal data, but you can suggest realistic AI automations
-for their website, customer journey, support, and lead generation.
-      `;
-
-    // ---------------------------------------------------------
-    // 4. SYSTEM PROMPT (YOU DON'T USUALLY NEED TO TOUCH THIS)
-    // ---------------------------------------------------------
+    // -----------------------------------------------------
+    // SYSTEM PROMPT – uses the single COMPANY profile
+    // -----------------------------------------------------
     const systemPrompt = `
-You are an AI assistant built specifically for ${effectiveName}.
+You are an AI assistant built specifically for ${COMPANY_NAME}.
 
-Your job:
-- Answer questions as if you are an AI assistant designed for ${effectiveName}.
-- Use the following company-specific context to ground your answers:
-${extraContext}
+Use the following company-specific context to guide your answers:
+${COMPANY_CONTEXT}
 
 General rules:
-- If you don't know something specific (e.g., internal tools, prices, team details),
-  say you don't know and suggest how AI or automation could help in that area instead.
-- Always relate your suggestions back to ${effectiveName}'s type of business and likely needs.
-- Ask 1–2 clarifying questions about the user's goals before going very deep.
-- Keep answers concrete, practical, and focused on real business value.
+- Always answer as an assistant designed for ${COMPANY_NAME}.
+- Ask 1–2 clarifying questions about the user's business and goals
+  before going very deep into strategy.
+- Be practical, concrete and focused on real business outcomes.
+- If you don't know specific internal details (pricing, internal tools, etc.),
+  say so and keep your advice general and realistic.
     `;
 
-    // ---------------------------------------------------------
-    // 5. CALL OPENAI
-    // ---------------------------------------------------------
     const openaiRes = await fetch("https://api.openai.com/v1/chat/completions", {
       method: "POST",
       headers: {
@@ -245,4 +176,3 @@ General rules:
     );
   }
 }
-
