@@ -140,29 +140,21 @@
 </div>
 
 <script>
-let companyName = "your company"; // default
+// ----------------------------------------
+// EDIT THIS NAME PER PROJECT
+// ----------------------------------------
+const COMPANY_NAME = "Favoured"; // change this for each new company
 
-// Read ?company= from the URL and personalise the demo
-(function initCompany() {
-    const params = new URLSearchParams(window.location.search);
-    const paramCompany = params.get("company");
-
-    if (paramCompany && paramCompany.trim().length > 0) {
-        companyName = paramCompany.trim();
-        document.getElementById("header-title").textContent =
-            companyName + " – AI Assistant Demo";
-    } else {
-        document.getElementById("header-title").textContent =
-            "AI Assistant Demo";
-    }
-})();
+// Set header text based on company name
+document.getElementById("header-title").textContent =
+    COMPANY_NAME + " – AI Assistant Demo";
 
 /* -------------------------------
    AUTO GREETING ON PAGE LOAD
 -------------------------------- */
 window.onload = () => {
     addMessage(
-        `Quick question — what type of business are you running? eCom, app, coaching, or something else? I can tailor suggestions instantly if you let me know what type of business you run at ${companyName}.`,
+        `Quick question — what type of business are you running? eCom, app, coaching, or something else? I can tailor suggestions instantly if you let me know what type of business you run.`,
         "ai"
     );
 
@@ -201,7 +193,7 @@ async function sendToAI(userInput) {
         const response = await fetch("/api/chat", {
             method: "POST",
             headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ message: userInput, company: companyName })
+            body: JSON.stringify({ message: userInput }) // no company sent now
         });
 
         if (!response.ok) {
